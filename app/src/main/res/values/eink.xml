@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="eink_background">#FFFFFF</color>
+    <color name="eink_foreground">#000000</color>
+    <style name="Theme.Tachiyomi.EInk" parent="Theme.Tachiyomi">
+        <item name="colorPrimary">@color/eink_foreground</item>
+        <item name="colorSecondary">@color/eink_foreground</item>
+        <item name="colorTertiary">@color/eink_foreground</item>
+        <item name="colorPrimaryContainer">@color/eink_foreground</item>
+        <item name="colorSecondaryContainer">@color/eink_foreground</item>
+        <item name="colorTertiaryContainer">@color/eink_foreground</item>
+        <item name="colorError">@color/eink_foreground</item>
+        <item name="colorErrorContainer">@color/eink_foreground</item>
+        <item name="colorOutline">@color/eink_foreground</item>
+        <item name="colorOutlineVariant">@color/eink_foreground</item>
+        <item name="colorOnBackground">@color/eink_foreground</item>
+        <item name="colorOnSurface">@color/eink_foreground</item>
+        <item name="colorOnSurfaceVariant">@color/eink_foreground</item>
+        <item name="colorControlNormal">@color/eink_foreground</item>
+        <item name="colorControlActivated">@color/eink_foreground</item>
+        <item name="android:colorBackground">@color/eink_background</item>
+        <item name="android:windowBackground">@color/eink_background</item>
+        <item name="colorSurface">@color/eink_background</item>
+        <item name="colorSurfaceVariant">@color/eink_background</item>
+        <item name="colorSurfaceContainer">@color/eink_background</item>
+        <item name="colorSurfaceContainerLow">@color/eink_background</item>
+        <item name="colorSurfaceContainerLowest">@color/eink_background</item>
+        <item name="colorSurfaceContainerHigh">@color/eink_background</item>
+        <item name="colorSurfaceContainerHighest">@color/eink_background</item>
+        <item name="colorSurfaceDim">@color/eink_background</item>
+        <item name="colorSurfaceBright">@color/eink_background</item>
+        <item name="colorOnPrimary">@color/eink_background</item>
+        <item name="colorOnSecondary">@color/eink_background</item>
+        <item name="colorOnTertiary">@color/eink_background</item>
+        <item name="colorOnPrimaryContainer">@color/eink_background</item>
+        <item name="colorOnSecondaryContainer">@color/eink_background</item>
+        <item name="colorOnTertiaryContainer">@color/eink_background</item>
+        <item name="colorOnError">@color/eink_background</item>
+        <item name="colorOnErrorContainer">@color/eink_background</item>
+        <item name="colorSurfaceInverse">@color/eink_foreground</item>
+        <item name="colorOnSurfaceInverse">@color/eink_background</item>
+        <item name="colorPrimaryInverse">@color/eink_background</item>
+        <item name="colorControlHighlight">@android:color/transparent</item>
+        <item name="android:colorControlHighlight">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="elevationOverlayEnabled">false</item>
+    </style>
+</resources>

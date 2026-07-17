@@ -1,0 +1,38 @@
+package eu.kanade.tachiyomi.ui.base.activity
+
+import android.content.Context
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegate
+import eu.kanade.tachiyomi.ui.base.delegate.SecureActivityDelegateImpl
+import eu.kanade.tachiyomi.ui.base.delegate.ThemingDelegate
+import eu.kanade.tachiyomi.ui.base.delegate.ThemingDelegateImpl
+import eu.kanade.tachiyomi.util.system.prepareTabletUiContext
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+open class BaseActivity :
+    AppCompatActivity(),
+    SecureActivityDelegate by SecureActivityDelegateImpl(),
+    ThemingDelegate by ThemingDelegateImpl() {
+
+    private var appliedEInkMode = false
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase.prepareTabletUiContext())
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        appliedEInkMode = Injekt.get<UiPreferences>().eInkMode().get()
+        applyAppTheme(this)
+        super.onCreate(savedInstanceState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (appliedEInkMode != Injekt.get<UiPreferences>().eInkMode().get()) {
+            recreate()
+        }
+    }
+}

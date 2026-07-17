@@ -1,0 +1,11 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.github.arkon.FlexibleAdapter</groupId>
+  <artifactId>flexible-adapter</artifactId>
+  <version>c8013533-local-properties1.0.3</version>
+  <packaging>aar</packaging>
+  <name>FlexibleAdapter</name>
+  <url>https://github.com/arkon/FlexibleAdapter</url>
+  <licenses><license><name>Apache License 2.0</name><url>https://www.apache.org/licenses/LICENSE-2.0</url></license></licenses>
+  <dependencies><dependency><groupId>androidx.recyclerview</groupId><artifactId>recyclerview</artifactId><version>1.1.0</version><scope>runtime</scope></dependency></dependencies>
+</project>
