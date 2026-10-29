@@ -14,4 +14,4 @@
 
 本地使用 Android Studio 的 JBR 25；GitHub 工作流明确使用 JDK 21。上游现有的 Kotlin 元数据和 R8 警告未阻止构建或测试通过。
 
-固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。用户正在手动配置两个仓库 Secrets。配方仍在功能分支，尚未合并到默认分支，因此目前没有启用定时发布，也尚未执行真实 GitHub Release 发布。iReader 真机水波纹效果未在本轮测试。
+固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。用户已确认手动配置完成两个仓库 Secrets，功能分支将验证其实际可用性。配方仍在功能分支，尚未合并到默认分支，因此目前没有启用定时发布，也尚未执行真实 GitHub Release 发布。iReader 真机水波纹效果未在本轮测试。

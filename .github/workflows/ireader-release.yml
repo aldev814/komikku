@@ -1,6 +1,9 @@
 name: iReader - Patch and release upstream stable
 
 on:
+  push:
+    branches: ['codex/automated-water-ripple-releases']
+    paths: ['.github/ireader/**', '.github/workflows/ireader-release.yml']
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
@@ -125,6 +128,7 @@ jobs:
           retention-days: 7
 
   publish:
+    if: github.ref == 'refs/heads/master' && github.event_name != 'push'
     needs: [detect, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
