@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import zipfile
 
@@ -14,11 +15,28 @@ def git(source, *args, **kwargs):
     return subprocess.check_output(['git', *args], cwd=source, text=True, **kwargs).strip()
 
 
-def package(source, artifacts, plan_file):
+def sync_approved_workflows(source, control):
+    # A release tag must not introduce historical upstream workflow definitions.
+    # Use byte-identical files already approved on this fork's control branch.
+    approved = control / '.github/workflows'
+    destination = source / '.github/workflows'
+    if not approved.is_dir():
+        raise ValueError('Missing approved fork workflows')
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(approved, destination)
+
+
+def package(source, artifacts, plan_file, control=None):
+    control = control or ROOT.parents[1]
     plan = json.loads(plan_file.read_text())
     plan['upstream_commit'] = git(source, 'rev-parse', 'HEAD')
     timestamp = git(source, 'log', '-1', '--format=%cI')
-    automation_commit = os.environ.get('GITHUB_SHA') or git(ROOT, 'rev-parse', 'HEAD')
+    automation_commit = git(control, 'rev-parse', 'HEAD')
+    if os.environ.get('GITHUB_SHA') and os.environ['GITHUB_SHA'] != automation_commit:
+        raise ValueError('Control checkout does not match the workflow commit')
+    sync_approved_workflows(source, control)
+    plan['workflow_snapshot_commit'] = automation_commit
     identity = {'GIT_AUTHOR_NAME': 'github-actions[bot]', 'GIT_COMMITTER_NAME': 'github-actions[bot]',
                 'GIT_AUTHOR_EMAIL': '41898282+github-actions[bot]@users.noreply.github.com',
                 'GIT_COMMITTER_EMAIL': '41898282+github-actions[bot]@users.noreply.github.com',
@@ -29,13 +47,19 @@ def package(source, artifacts, plan_file):
         staged = subprocess.check_output(['git', 'show', ':' + relative], cwd=source)
         if staged != aar.read_bytes():
             raise ValueError('Git filters changed vendored AAR bytes: ' + relative)
-    git(source, 'commit', '-m', f"Apply iReader p{plan['patch_revision']} to {plan['upstream_tag']}\n\nAutomation: {automation_commit}",
-        env={**os.environ, **identity})
+    # Import only the already-approved fork history as the release parent. New
+    # upstream workflow commits must not be pushed with the contents-only token.
+    git(source, 'fetch', '--no-tags', str(control), automation_commit)
+    tree = git(source, 'write-tree')
+    message = (f"Apply iReader p{plan['patch_revision']} to {plan['upstream_tag']}\n\n"
+               f"Upstream: {plan['upstream_commit']}\nAutomation: {automation_commit}")
+    commit = git(source, 'commit-tree', tree, '-p', automation_commit, '-m', message,
+                 env={**os.environ, **identity})
+    git(source, 'reset', '--soft', commit)
     plan_file.write_text(json.dumps(plan, indent=2) + '\n')
     git(source, 'update-ref', 'refs/heads/ireader-release', 'HEAD')
     artifacts.mkdir(parents=True, exist_ok=True)
     git(source, 'bundle', 'create', str(artifacts / 'patched-source.bundle'), 'refs/heads/ireader-release')
-    control = ROOT.parents[1]
     files = subprocess.check_output(['git', 'ls-files', '-z', '.github/ireader'], cwd=control).decode().split('\0')
     with zipfile.ZipFile(artifacts / 'ireader-patches.zip', 'w', compression=zipfile.ZIP_DEFLATED) as archive:
         for name in files:

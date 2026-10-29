@@ -6,7 +6,7 @@
 - `spotlessApply`、`spotlessCheck`、`assembleDebug`：通过。
 - `assembleRelease -Pireader-patch-revision=1`：通过，保留上游 R8 混淆和资源压缩。
 - `testReleaseUnitTest`：通过；76 项测试，0 失败、0 错误、1 跳过（包含水波纹测试）。
-- 自动发布脚本测试：21 项通过，覆盖去重、草稿恢复、不覆盖已发布文件、补丁冲突、校验和及新版/旧版 apksigner 输出。
+- 自动发布脚本测试：23 项通过，覆盖去重、草稿恢复、不覆盖已发布文件、补丁冲突、校验和、新版/旧版 apksigner 输出，以及发布源码的工作流和提交历史隔离。
 - actionlint v1.7.7：通过。
 - 五个 Release APK：使用新建固定密钥签署并通过 apksigner 验证；独立包名 `app.komikku.ireader`。
 - 公共签名证书 SHA-256：`85fd9a95df28496994fa4ad68eb204cbb6b4945c2a217c23b23adfb4f3699c3f`。
@@ -15,4 +15,4 @@
 
 本地使用 Android Studio 的 JBR 25；GitHub 工作流明确使用 JDK 21。上游现有的 Kotlin 元数据和 R8 警告未阻止构建或测试通过。
 
-固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。两个仓库 Secrets 已由用户手动配置，并在上述云端签名构建中实际使用成功。配方仍在功能分支，尚未合并到默认分支，因此目前没有启用定时发布，也尚未执行真实 GitHub Release 发布。iReader 真机水波纹效果未在本轮测试。
+固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。两个仓库 Secrets 已由用户手动配置，并在上述云端签名构建中实际使用成功。配方已获用户批准合并到默认分支，定时检测已启用。首次正式运行的构建、测试和签名全部成功，发布标签因上游工作流历史触发 GitHub 默认令牌权限限制而失败；修复改用以 fork 配方提交为父提交的源码快照，且工作流必须与该提交一致。修复后的真实发布结果待核验。iReader 真机水波纹效果未在本轮测试。

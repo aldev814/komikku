@@ -19,6 +19,7 @@ def load(name):
 release = load('release')
 prepare_source = load('prepare_source')
 signer = load('sign')
+packager = load('package_source')
 
 
 class ReleasePlanTest(unittest.TestCase):
@@ -139,6 +140,60 @@ class LegacyFallbackTest(unittest.TestCase):
         (self.source / 'third-party/ireader-legacy').mkdir(parents=True)
         with self.assertRaises(ValueError):
             prepare_source.legacy_flexible_adapter(self.source)
+
+
+class WorkflowSnapshotTest(unittest.TestCase):
+    def test_snapshot_uses_only_identical_approved_workflows(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, control = root / 'source', root / 'control'
+            for directory in [source / '.github/workflows', control / '.github/workflows']:
+                directory.mkdir(parents=True)
+            (source / '.github/workflows/build.yml').write_text('historical upstream workflow\n')
+            (source / '.github/workflows/removed.yml').write_text('obsolete workflow\n')
+            (control / '.github/workflows/build.yml').write_text('approved fork workflow\n')
+            (control / '.github/workflows/ireader.yml').write_text('approved release workflow\n')
+            app = source / 'app.kt'
+            app.write_text('patched app remains untouched\n')
+            packager.sync_approved_workflows(source, control)
+            actual = {p.name: p.read_bytes() for p in (source / '.github/workflows').iterdir()}
+            expected = {p.name: p.read_bytes() for p in (control / '.github/workflows').iterdir()}
+            self.assertEqual(actual, expected)
+            self.assertEqual(app.read_text(), 'patched app remains untouched\n')
+
+
+class ReleaseSnapshotHistoryTest(unittest.TestCase):
+    def test_new_upstream_workflow_history_is_not_pushed_with_release_snapshot(self):
+        import os
+        environment = {'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_CONFIG_NOSYSTEM': '1',
+                       'GIT_AUTHOR_NAME': 'Test', 'GIT_COMMITTER_NAME': 'Test',
+                       'GIT_AUTHOR_EMAIL': 'test@example.com', 'GIT_COMMITTER_EMAIL': 'test@example.com'}
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, environment):
+            root = Path(temporary)
+            source, control = root / 'source', root / 'control'
+            for directory, workflow in [(source, 'new upstream workflow'), (control, 'approved fork workflow')]:
+                (directory / '.github/workflows').mkdir(parents=True)
+                (directory / '.github/workflows/build.yml').write_text(workflow + '\n')
+                (directory / 'app.kt').write_text('upstream app' if directory == source else 'fork app')
+                subprocess.run(['git', 'init', '-q'], cwd=directory, check=True)
+                subprocess.run(['git', 'add', '.'], cwd=directory, check=True)
+                subprocess.run(['git', 'commit', '-q', '-m', workflow], cwd=directory, check=True)
+            upstream = packager.git(source, 'rev-parse', 'HEAD')
+            approved = packager.git(control, 'rev-parse', 'HEAD')
+            (source / 'app.kt').write_text('upstream app plus water ripple')
+            plan = root / 'plan.json'
+            plan.write_text(json.dumps({'upstream_tag': 'v1.0.0', 'patch_revision': '1',
+                                        'upstream_url': 'https://github.com/komikku-app/komikku/releases/tag/v1.0.0'}))
+            with patch.dict(os.environ, {'GITHUB_SHA': approved}):
+                packager.package(source, root / 'artifacts', plan, control=control)
+            self.assertEqual(packager.git(source, 'rev-parse', 'HEAD^'), approved)
+            self.assertEqual(len(packager.git(source, 'rev-list', 'HEAD', '^' + approved).splitlines()), 1)
+            ancestor = subprocess.run(['git', 'merge-base', '--is-ancestor', upstream, 'HEAD'], cwd=source)
+            self.assertEqual(ancestor.returncode, 1)
+            self.assertEqual(packager.git(source, 'show', 'HEAD:app.kt'), 'upstream app plus water ripple')
+            self.assertEqual(packager.git(source, 'show', 'HEAD:.github/workflows/build.yml'), 'approved fork workflow')
+            self.assertEqual(json.loads(plan.read_text())['upstream_commit'], upstream)
+            self.assertEqual(json.loads(plan.read_text())['workflow_snapshot_commit'], approved)
 
 
 class SigningOutputTest(unittest.TestCase):

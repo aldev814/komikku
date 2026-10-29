@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'status=$?; printf "::error file=.github/ireader/publish.sh,line=%s::Publisher failed with exit %s at: %s\n" "$LINENO" "$status" "$BASH_COMMAND"; exit "$status"' ERR
 : "${RELEASE_TAG:?}" "${GH_REPO:?}" "${GITHUB_WORKSPACE:?}"
 artifacts="$GITHUB_WORKSPACE/artifacts"
 source_commit=$(python3 -c 'import json; print(json.load(open("../artifacts/build-metadata.json"))["source_commit"])')
 [[ "$source_commit" =~ ^[a-f0-9]{40}$ ]]
 [[ "$RELEASE_TAG" =~ ^ireader-v[0-9][A-Za-z0-9._+-]*-p[0-9]+$ ]]
 git fetch "$artifacts/patched-source.bundle" refs/heads/ireader-release
-[[ "$(git rev-parse FETCH_HEAD)" == "$source_commit" ]]
+if [[ "$(git rev-parse FETCH_HEAD)" != "$source_commit" ]]; then
+  echo '::error::Source bundle commit does not match signed APK metadata.' >&2
+  exit 1
+fi
+if ! git diff --quiet HEAD "$source_commit" -- .github/workflows; then
+  echo '::error::Release source workflows differ from the approved fork workflows; refusing to push the tag.' >&2
+  exit 1
+fi
 git config user.name 'github-actions[bot]'
 git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 if [[ -n "$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG")" ]]; then

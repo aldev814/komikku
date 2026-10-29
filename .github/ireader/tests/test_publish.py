@@ -35,6 +35,7 @@ class PublishRecoveryTest(unittest.TestCase):
             git(source, 'update-ref', 'refs/heads/ireader-release', commit)
             git(source, 'bundle', 'create', str(artifacts / 'patched-source.bundle'), 'refs/heads/ireader-release')
             git(control, 'init')
+            git(control, 'commit', '--allow-empty', '-m', 'approved control snapshot')
             git(control, 'remote', 'add', 'origin', str(root / 'remote.git'))
             (artifacts / 'build-metadata.json').write_text(json.dumps({'source_commit': commit}))
             for name in ['fixture.apk', 'SHA256SUMS', 'RELEASE_NOTES.md', 'ireader-patches.zip']:
@@ -62,6 +63,19 @@ else: sys.exit(2)
             def publish():
                 return subprocess.run(['bash', str(ROOT / 'publish.sh')], cwd=control, env=environment,
                                       text=True, capture_output=True)
+
+            # A workflow mismatch must stop before any tag or release mutation.
+            workflows = control / '.github/workflows'
+            workflows.mkdir(parents=True)
+            (workflows / 'approved.yml').write_text('name: approved\n')
+            git(control, 'add', '.')
+            git(control, 'commit', '-m', 'different approved workflows')
+            rejected = publish()
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn('workflows differ', rejected.stderr)
+            self.assertFalse((root / 'calls.txt').exists())
+            self.assertEqual(git(root, '--git-dir=' + str(root / 'remote.git'), 'tag'), '')
+            git(control, 'reset', '--hard', 'HEAD~1')
 
             first = publish()
             self.assertNotEqual(first.returncode, 0)
