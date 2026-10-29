@@ -1,0 +1,538 @@
+diff --git a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsReaderScreen.kt b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsReaderScreen.kt
+index 5fca46c..52a16d7 100644
+--- a/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsReaderScreen.kt
++++ b/app/src/main/java/eu/kanade/presentation/more/settings/screen/SettingsReaderScreen.kt
+@@ -1,5 +1,6 @@
+ package eu.kanade.presentation.more.settings.screen
+ 
++// KMK -->
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.ReadOnlyComposable
+ import androidx.compose.runtime.getValue
+@@ -13,6 +14,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.Companion.zoomWid
+ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.WebtoonScaleType
+ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+ import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
++import eu.kanade.tachiyomi.util.system.SmartOsPageTurnEffect
+ import eu.kanade.tachiyomi.util.system.hasDisplayCutout
+ import kotlinx.collections.immutable.persistentListOf
+ import kotlinx.collections.immutable.persistentMapOf
+@@ -26,6 +28,7 @@ import tachiyomi.presentation.core.util.collectAsState
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
+ import java.text.NumberFormat
++// KMK <--
+ 
+ object SettingsReaderScreen : SearchableSettings {
+     @Suppress("unused")
+@@ -251,6 +254,27 @@ object SettingsReaderScreen : SearchableSettings {
+         val rotateToFit by rotateToFitPref.collectAsState()
+ 
+         // KMK -->
++        val transitions by readerPreferences.pageTransitionsPager().collectAsState()
++        val waterRipple by readerPreferences.waterRipplePageTransitions().collectAsState()
++        val waterRipplePreferences = if (SmartOsPageTurnEffect.isSupported) {
++            persistentListOf<Preference.PreferenceItem<out Any, out Any>>(
++                Preference.PreferenceItem.SwitchPreference(
++                    preference = readerPreferences.waterRipplePageTransitions(),
++                    title = stringResource(KMR.strings.page_transition_water_ripple),
++                    enabled = transitions,
++                ),
++                Preference.PreferenceItem.ListPreference(
++                    preference = readerPreferences.waterRippleSpeed(),
++                    entries = ReaderPreferences.WaterRippleSpeed.entries
++                        .associateWith { stringResource(it.titleRes) }
++                        .toImmutableMap(),
++                    title = stringResource(KMR.strings.water_ripple_speed),
++                    enabled = transitions && waterRipple,
++                ),
++            )
++        } else {
++            persistentListOf()
++        }
+         val pagedDisableZoomInPref = readerPreferences.pagedDisableZoomIn()
+         val landscapeZoomPref = readerPreferences.landscapeZoom()
+         val pagedDisableZoomIn by pagedDisableZoomInPref.collectAsState()
+@@ -307,6 +331,9 @@ object SettingsReaderScreen : SearchableSettings {
+                     title = stringResource(MR.strings.pref_page_transitions),
+                 ),
+                 // SY <--
++                // KMK -->
++                *waterRipplePreferences.toTypedArray(),
++                // KMK <--
+                 Preference.PreferenceItem.SwitchPreference(
+                     preference = landscapeZoomPref,
+                     title = stringResource(MR.strings.pref_landscape_zoom),
+diff --git a/app/src/main/java/eu/kanade/presentation/reader/settings/ReadingModePage.kt b/app/src/main/java/eu/kanade/presentation/reader/settings/ReadingModePage.kt
+index 32503f2..6c69300 100644
+--- a/app/src/main/java/eu/kanade/presentation/reader/settings/ReadingModePage.kt
++++ b/app/src/main/java/eu/kanade/presentation/reader/settings/ReadingModePage.kt
+@@ -1,5 +1,6 @@
+ package eu.kanade.presentation.reader.settings
+ 
++// KMK -->
+ import androidx.compose.material3.FilterChip
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.Text
+@@ -13,7 +14,9 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
+ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+ import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
+ import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
++import eu.kanade.tachiyomi.ui.reader.viewer.pager.VerticalPagerViewer
+ import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
++import eu.kanade.tachiyomi.util.system.SmartOsPageTurnEffect
+ import tachiyomi.i18n.MR
+ import tachiyomi.i18n.kmk.KMR
+ import tachiyomi.i18n.sy.SYMR
+@@ -24,6 +27,7 @@ import tachiyomi.presentation.core.components.SliderItem
+ import tachiyomi.presentation.core.i18n.stringResource
+ import tachiyomi.presentation.core.util.collectAsState
+ import java.text.NumberFormat
++// KMK <--
+ 
+ @Composable
+ internal fun ReadingModePage(screenModel: ReaderSettingsScreenModel) {
+@@ -174,6 +178,32 @@ private fun PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
+         pref = screenModel.preferences.pageTransitionsPager(),
+     )
+ 
++    // KMK -->
++    val rippleViewer by screenModel.viewerFlow.collectAsState()
++    if (SmartOsPageTurnEffect.isSupported && rippleViewer !is VerticalPagerViewer) {
++        val transitions by screenModel.preferences.pageTransitionsPager().collectAsState()
++        if (transitions) {
++            CheckboxItem(
++                label = stringResource(KMR.strings.page_transition_water_ripple),
++                pref = screenModel.preferences.waterRipplePageTransitions(),
++            )
++            val waterRipple by screenModel.preferences.waterRipplePageTransitions().collectAsState()
++            if (waterRipple) {
++                val speed by screenModel.preferences.waterRippleSpeed().collectAsState()
++                SettingsChipRow(KMR.strings.water_ripple_speed) {
++                    ReaderPreferences.WaterRippleSpeed.entries.forEach { option ->
++                        FilterChip(
++                            selected = speed == option,
++                            onClick = { screenModel.preferences.waterRippleSpeed().set(option) },
++                            label = { Text(stringResource(option.titleRes)) },
++                        )
++                    }
++                }
++            }
++        }
++    }
++    // KMK <--
++
+     CheckboxItem(
+         label = stringResource(SYMR.strings.invert_double_pages),
+         pref = screenModel.preferences.invertDoublePages(),
+diff --git a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/setting/ReaderPreferences.kt b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/setting/ReaderPreferences.kt
+index 2d6fd40..4cab06f 100644
+--- a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/setting/ReaderPreferences.kt
++++ b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/setting/ReaderPreferences.kt
+@@ -23,6 +23,18 @@ class ReaderPreferences(
+     fun pageTransitionsWebtoon() = preferenceStore.getBoolean("pref_enable_transitions_webtoon_key", true)
+     // SY <--
+ 
++    // KMK -->
++    fun waterRipplePageTransitions() = preferenceStore.getBoolean("pref_water_ripple_page_transitions", false)
++
++    fun waterRippleSpeed() = preferenceStore.getEnum("pref_water_ripple_speed", WaterRippleSpeed.STANDARD)
++
++    enum class WaterRippleSpeed(val titleRes: StringResource, val commandFlag: Int) {
++        SLOW(KMR.strings.water_ripple_speed_slow, 128),
++        STANDARD(KMR.strings.water_ripple_speed_standard, 64),
++        FAST(KMR.strings.water_ripple_speed_fast, 0),
++    }
++    // KMK <--
++
+     fun flashOnPageChange() = preferenceStore.getBoolean("pref_reader_flash", false)
+ 
+     fun flashDurationMillis() = preferenceStore.getInt("pref_reader_flash_duration", MILLI_CONVERSION)
+diff --git a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirection.kt b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirection.kt
+new file mode 100644
+index 0000000..f632aaf
+--- /dev/null
++++ b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirection.kt
+@@ -0,0 +1,13 @@
++package eu.kanade.tachiyomi.ui.reader.viewer.pager
++
++/** Returns null for an initial selection or when a list rebuild removed the previous item. */
++internal fun isForwardPageSelection(
++    items: List<Any>,
++    previous: Any?,
++    position: Int,
++    rightToLeft: Boolean,
++): Boolean? {
++    val previousPosition = items.indexOf(previous)
++    if (previousPosition < 0 || position !in items.indices || previousPosition == position) return null
++    return (position > previousPosition) != rightToLeft
++}
+diff --git a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerConfig.kt b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerConfig.kt
+index 0647abd..628cca0 100644
+--- a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerConfig.kt
++++ b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerConfig.kt
+@@ -1,5 +1,6 @@
+ package eu.kanade.tachiyomi.ui.reader.viewer.pager
+ 
++// KMK -->
+ import android.graphics.Color
+ import androidx.annotation.ColorInt
+ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+@@ -12,12 +13,14 @@ import eu.kanade.tachiyomi.ui.reader.viewer.navigation.EdgeNavigation
+ import eu.kanade.tachiyomi.ui.reader.viewer.navigation.KindlishNavigation
+ import eu.kanade.tachiyomi.ui.reader.viewer.navigation.LNavigation
+ import eu.kanade.tachiyomi.ui.reader.viewer.navigation.RightAndLeftNavigation
++import eu.kanade.tachiyomi.util.system.SmartOsPageTurnEffect
+ import kotlinx.coroutines.CoroutineScope
+ import kotlinx.coroutines.flow.drop
+ import kotlinx.coroutines.flow.launchIn
+ import kotlinx.coroutines.flow.onEach
+ import uy.kohesive.injekt.Injekt
+ import uy.kohesive.injekt.api.get
++// KMK <--
+ 
+ /**
+  * Configuration used by pager viewers.
+@@ -28,6 +31,18 @@ class PagerConfig(
+     readerPreferences: ReaderPreferences = Injekt.get(),
+ ) : ViewerConfig(readerPreferences, scope) {
+ 
++    // KMK -->
++    var waterRipplePageTransitions = false
++        private set
++
++    var waterRippleSpeed = ReaderPreferences.WaterRippleSpeed.STANDARD
++        private set
++
++    val useSmartOsWaterRipple: Boolean
++        get() = viewer !is VerticalPagerViewer && usePageTransitions &&
++            waterRipplePageTransitions && SmartOsPageTurnEffect.isSupported
++    // KMK <--
++
+     var automaticBackground = false
+         private set
+ 
+@@ -86,6 +101,13 @@ class PagerConfig(
+     // SY <--
+ 
+     init {
++        // KMK -->
++        readerPreferences.waterRipplePageTransitions()
++            .register({ waterRipplePageTransitions = it })
++        readerPreferences.waterRippleSpeed()
++            .register({ waterRippleSpeed = it })
++        // KMK <--
++
+         readerPreferences.readerTheme()
+             .register(
+                 {
+diff --git a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerViewer.kt b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerViewer.kt
+index 58007c6..e592612 100644
+--- a/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerViewer.kt
++++ b/app/src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PagerViewer.kt
+@@ -1,5 +1,6 @@
+ package eu.kanade.tachiyomi.ui.reader.viewer.pager
+ 
++// KMK -->
+ import android.graphics.PointF
+ import android.view.InputDevice
+ import android.view.KeyEvent
+@@ -21,11 +22,13 @@ import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+ import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
+ import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
++import eu.kanade.tachiyomi.util.system.SmartOsPageTurnEffect
+ import kotlinx.coroutines.MainScope
+ import kotlinx.coroutines.cancel
+ import tachiyomi.core.common.util.system.logcat
+ import uy.kohesive.injekt.injectLazy
+ import kotlin.math.min
++// KMK <--
+ 
+ /**
+  * Implementation of a [Viewer] to display pages with a [ViewPager].
+@@ -214,6 +217,26 @@ abstract class PagerViewer(
+                     false
+                 else -> true
+             }
++            // KMK -->
++            if (config.useSmartOsWaterRipple && currentPage is ReaderPage && page is ReaderPage) {
++                val rippleForward = isForwardPageSelection(
++                    items = adapter.joinedItems.map { it.first },
++                    previous = currentPage,
++                    position = position,
++                    rightToLeft = this is R2LPagerViewer,
++                )
++                if (rippleForward != null) {
++                    @Suppress("DEPRECATION")
++                    val rotation = activity.windowManager.defaultDisplay.rotation
++                    SmartOsPageTurnEffect.prepare(
++                        forward = rippleForward,
++                        rightToLeft = this is R2LPagerViewer,
++                        displayRotation = rotation,
++                        speed = config.waterRippleSpeed,
++                    )
++                }
++            }
++            // KMK <--
+             currentPage = page
+             when (page) {
+                 is ReaderPage -> onReaderPageSelected(page, allowPreload, forward, pagePair.second != null)
+@@ -328,7 +351,9 @@ abstract class PagerViewer(
+         val position = adapter.joinedItems.indexOfFirst { it.first == page || it.second == page }
+         if (position != -1) {
+             val currentPosition = pager.currentItem
+-            pager.setCurrentItem(position, true)
++            // KMK -->
++            pager.setCurrentItem(position, !config.useSmartOsWaterRipple)
++            // KMK <--
+             // manually call onPageChange since ViewPager listener is not triggered in this case
+             if (currentPosition == position) {
+                 onPageChange(position)
+@@ -369,7 +394,9 @@ abstract class PagerViewer(
+             if (holder != null && config.navigateToPan && holder.canPanRight()) {
+                 holder.panRight()
+             } else {
+-                pager.setCurrentItem(pager.currentItem + 1, config.usePageTransitions)
++                // KMK -->
++                pager.setCurrentItem(pager.currentItem + 1, config.usePageTransitions && !config.useSmartOsWaterRipple)
++                // KMK <--
+             }
+         }
+     }
+@@ -383,7 +410,9 @@ abstract class PagerViewer(
+             if (holder != null && config.navigateToPan && holder.canPanLeft()) {
+                 holder.panLeft()
+             } else {
+-                pager.setCurrentItem(pager.currentItem - 1, config.usePageTransitions)
++                // KMK -->
++                pager.setCurrentItem(pager.currentItem - 1, config.usePageTransitions && !config.useSmartOsWaterRipple)
++                // KMK <--
+             }
+         }
+     }
+diff --git a/app/src/main/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffect.kt b/app/src/main/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffect.kt
+new file mode 100644
+index 0000000..24bf539
+--- /dev/null
++++ b/app/src/main/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffect.kt
+@@ -0,0 +1,82 @@
++package eu.kanade.tachiyomi.util.system
++
++import android.os.Build
++import android.view.Surface
++import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
++import exh.log.xLogE
++import java.lang.reflect.Method
++
++/** SmartOS 4 horizontal water-ripple page-turn effect. */
++object SmartOsPageTurnEffect {
++
++    private const val EPDC_DEVICE_CLASS = "android.eink.EPDCDevice"
++    private const val SMART_OS_VERSION_PROPERTY = "ro.build.versionCode"
++    private const val MINIMUM_SMART_OS_MAJOR_VERSION = 4
++
++    private val nativePostCommand: Method? by lazy {
++        runCatching {
++            Class.forName(EPDC_DEVICE_CLASS).getMethod("nativePostCommand", String::class.java)
++        }.getOrNull()
++    }
++
++    val isSupported: Boolean by lazy {
++        val isIReaderDevice = Build.MANUFACTURER.equals("iReader", ignoreCase = true) ||
++            Build.BRAND.equals("iReader", ignoreCase = true)
++        if (!isIReaderDevice) return@lazy false
++        val smartOsMajorVersion = readSystemProperty(SMART_OS_VERSION_PROPERTY)
++            ?.substringBefore('.')
++            ?.toIntOrNull()
++
++        smartOsMajorVersion != null &&
++            smartOsMajorVersion >= MINIMUM_SMART_OS_MAJOR_VERSION &&
++            nativePostCommand != null
++    }
++
++    fun prepare(
++        forward: Boolean,
++        rightToLeft: Boolean,
++        displayRotation: Int,
++        speed: ReaderPreferences.WaterRippleSpeed,
++    ) {
++        if (!isSupported) return
++
++        val command = "next-effect-type ${waterRippleCommandCode(forward, rightToLeft, displayRotation, speed)}"
++        runCatching { nativePostCommand?.invoke(null, command) }
++            .onFailure { error ->
++                xLogE("Failed to prepare SmartOS water-ripple page turn", error)
++            }
++    }
++
++    private fun readSystemProperty(name: String): String? {
++        val reflectedValue = runCatching {
++            Class.forName("android.os.SystemProperties")
++                .getMethod("get", String::class.java)
++                .invoke(null, name) as? String
++        }.getOrNull()
++        if (!reflectedValue.isNullOrBlank()) return reflectedValue
++
++        return runCatching {
++            ProcessBuilder("/system/bin/getprop", name)
++                .start()
++                .inputStream
++                .bufferedReader()
++                .use { it.readLine() }
++        }.getOrNull()?.takeIf(String::isNotBlank)
++    }
++
++    internal fun waterRippleCommandCode(
++        forward: Boolean,
++        rightToLeft: Boolean,
++        displayRotation: Int,
++        speed: ReaderPreferences.WaterRippleSpeed,
++    ): Int {
++        val systemForward = if (rightToLeft) !forward else forward
++        val direction = when (displayRotation) {
++            Surface.ROTATION_90 -> if (systemForward) 4 else 3
++            Surface.ROTATION_180 -> if (systemForward) 2 else 1
++            Surface.ROTATION_270 -> if (systemForward) 3 else 4
++            else -> if (systemForward) 1 else 2
++        }
++        return direction or speed.commandFlag
++    }
++}
+diff --git a/app/src/test/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirectionTest.kt b/app/src/test/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirectionTest.kt
+new file mode 100644
+index 0000000..8ab1b47
+--- /dev/null
++++ b/app/src/test/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/PageSelectionDirectionTest.kt
+@@ -0,0 +1,65 @@
++package eu.kanade.tachiyomi.ui.reader.viewer.pager
++
++import org.junit.jupiter.api.Assertions.assertEquals
++import org.junit.jupiter.api.Assertions.assertNull
++import org.junit.jupiter.api.Test
++
++class PageSelectionDirectionTest {
++
++    private data class Page(val chapter: Int, val number: Int, val secondHalf: Boolean = false)
++
++    private val lastPage = Page(1, 100)
++    private val firstPage = Page(2, 1)
++    private val secondHalf = Page(2, 1, secondHalf = true)
++    private val nextPage = Page(2, 2)
++    private val readingOrder = listOf(lastPage, firstPage, secondHalf, nextPage)
++
++    @Test
++    fun `chapter number reset and split pages preserve direction in both reading modes`() {
++        for (rtl in listOf(false, true)) {
++            val items = if (rtl) readingOrder.reversed() else readingOrder
++            for ((previous, next) in readingOrder.zipWithNext()) {
++                assertEquals(true, isForwardPageSelection(items, previous, items.indexOf(next), rtl))
++                assertEquals(false, isForwardPageSelection(items, next, items.indexOf(previous), rtl))
++            }
++        }
++    }
++
++    @Test
++    fun `joined spreads advance by their displayed positions`() {
++        val spreads = listOf(lastPage to firstPage, secondHalf to nextPage)
++        val visiblePages = spreads.map { it.first }
++        assertEquals(true, isForwardPageSelection(visiblePages, lastPage, 1, false))
++        assertEquals(false, isForwardPageSelection(visiblePages, secondHalf, 0, false))
++        assertEquals(true, isForwardPageSelection(visiblePages.reversed(), lastPage, 0, true))
++    }
++
++    @Test
++    fun `inserting preloaded pages does not change direction`() {
++        for (rtl in listOf(false, true)) {
++            val expanded = listOf(Page(0, 1), Page(0, 2)) + readingOrder
++            val items = if (rtl) expanded.reversed() else expanded
++            assertEquals(true, isForwardPageSelection(items, firstPage, items.indexOf(secondHalf), rtl))
++        }
++    }
++
++    @Test
++    fun `chapter transition follows its actual position`() {
++        val transition = Any()
++        for (rtl in listOf(false, true)) {
++            val order = listOf(lastPage, transition, firstPage)
++            val items = if (rtl) order.reversed() else order
++            assertEquals(true, isForwardPageSelection(items, transition, items.indexOf(firstPage), rtl))
++            assertEquals(false, isForwardPageSelection(items, transition, items.indexOf(lastPage), rtl))
++        }
++    }
++
++    @Test
++    fun `initial removed unchanged and invalid selections have no direction`() {
++        assertNull(isForwardPageSelection(readingOrder, null, 0, false))
++        assertNull(isForwardPageSelection(readingOrder, Page(0, 1), 0, false))
++        assertNull(isForwardPageSelection(readingOrder, firstPage, 1, false))
++        assertNull(isForwardPageSelection(readingOrder, firstPage, -1, false))
++        assertNull(isForwardPageSelection(readingOrder, firstPage, readingOrder.size, false))
++    }
++}
+diff --git a/app/src/test/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffectTest.kt b/app/src/test/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffectTest.kt
+new file mode 100644
+index 0000000..405963b
+--- /dev/null
++++ b/app/src/test/java/eu/kanade/tachiyomi/util/system/SmartOsPageTurnEffectTest.kt
+@@ -0,0 +1,45 @@
++package eu.kanade.tachiyomi.util.system
++
++import android.view.Surface
++import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
++import org.junit.jupiter.api.Assertions.assertEquals
++import org.junit.jupiter.api.Test
++
++class SmartOsPageTurnEffectTest {
++
++    @Test
++    fun `water ripple direction follows display rotation when turning forward`() {
++        assertEquals(65, commandCode(true, false, Surface.ROTATION_0))
++        assertEquals(68, commandCode(true, false, Surface.ROTATION_90))
++        assertEquals(66, commandCode(true, false, Surface.ROTATION_180))
++        assertEquals(67, commandCode(true, false, Surface.ROTATION_270))
++    }
++
++    @Test
++    fun `water ripple direction follows display rotation when turning backward`() {
++        assertEquals(66, commandCode(false, false, Surface.ROTATION_0))
++        assertEquals(67, commandCode(false, false, Surface.ROTATION_90))
++        assertEquals(65, commandCode(false, false, Surface.ROTATION_180))
++        assertEquals(68, commandCode(false, false, Surface.ROTATION_270))
++    }
++
++    @Test
++    fun `right to left reading reverses the system direction`() {
++        assertEquals(66, commandCode(true, true, Surface.ROTATION_0))
++        assertEquals(65, commandCode(false, true, Surface.ROTATION_0))
++    }
++
++    @Test
++    fun `water ripple speed selects the official command flag`() {
++        assertEquals(129, commandCode(true, false, Surface.ROTATION_0, ReaderPreferences.WaterRippleSpeed.SLOW))
++        assertEquals(65, commandCode(true, false, Surface.ROTATION_0, ReaderPreferences.WaterRippleSpeed.STANDARD))
++        assertEquals(1, commandCode(true, false, Surface.ROTATION_0, ReaderPreferences.WaterRippleSpeed.FAST))
++    }
++
++    private fun commandCode(
++        forward: Boolean,
++        rightToLeft: Boolean,
++        rotation: Int,
++        speed: ReaderPreferences.WaterRippleSpeed = ReaderPreferences.WaterRippleSpeed.STANDARD,
++    ) = SmartOsPageTurnEffect.waterRippleCommandCode(forward, rightToLeft, rotation, speed)
++}
+diff --git a/i18n-kmk/src/commonMain/moko-resources/base/strings.xml b/i18n-kmk/src/commonMain/moko-resources/base/strings.xml
+index deea67a..3a756c3 100644
+--- a/i18n-kmk/src/commonMain/moko-resources/base/strings.xml
++++ b/i18n-kmk/src/commonMain/moko-resources/base/strings.xml
+@@ -238,4 +238,10 @@
+     <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
+     <string name="pref_discord_show_discord_button">Show Discord Button</string>
+     <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
++    <!-- iReader SmartOS water-ripple page transitions -->
++    <string name="page_transition_water_ripple">Water ripple (iReader SmartOS)</string>
++    <string name="water_ripple_speed">Water ripple speed</string>
++    <string name="water_ripple_speed_slow">Slow</string>
++    <string name="water_ripple_speed_standard">Standard</string>
++    <string name="water_ripple_speed_fast">Fast</string>
+ </resources>

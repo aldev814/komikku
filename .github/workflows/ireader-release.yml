@@ -1,0 +1,148 @@
+name: iReader - Patch and release upstream stable
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: 'Published upstream stable tag (empty = latest)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ireader-release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    if: github.repository == 'aldev814/komikku'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      needed: ${{ steps.detect.outputs.needed }}
+      upstream_tag: ${{ steps.detect.outputs.upstream_tag }}
+      release_tag: ${{ steps.detect.outputs.release_tag }}
+      patch_revision: ${{ steps.detect.outputs.patch_revision }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check upstream stable release and skip published builds
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.upstream_tag }}
+        run: python3 .github/ireader/release.py --tag "$REQUESTED_TAG" --output release-plan.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ireader-release-plan
+          path: release-plan.json
+          retention-days: 7
+
+  build:
+    needs: detect
+    if: needs.detect.outputs.needed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check fixed signing secrets before building
+        env:
+          KEY: ${{ secrets.IREADER_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.IREADER_KEYSTORE_PASSWORD }}
+        run: |
+          if [[ -z "$KEY" || -z "$PASSWORD" ]]; then
+            echo 'Configure IREADER_KEYSTORE_BASE64 and IREADER_KEYSTORE_PASSWORD; see .github/ireader/README.md.' >&2
+            exit 1
+          fi
+      - name: Check out trusted patch recipe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ireader-release-plan
+          path: plan
+      - name: Check out the exact published upstream tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: komikku-app/komikku
+          ref: refs/tags/${{ needs.detect.outputs.upstream_tag }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+      - name: Test release automation
+        run: python3 -m unittest discover -s control/.github/ireader/tests -v
+      - name: Apply patches (stop on conflict)
+        run: python3 control/.github/ireader/prepare_source.py source
+      - name: Format patched source
+        working-directory: source
+        run: ./gradlew spotlessApply
+      - name: Check format
+        working-directory: source
+        run: ./gradlew spotlessCheck
+      - name: Record patched source for the release tag
+        run: python3 control/.github/ireader/package_source.py source artifacts plan/release-plan.json
+      - name: Build release APKs without upstream updater or telemetry
+        working-directory: source
+        env:
+          PATCH_REVISION: ${{ needs.detect.outputs.patch_revision }}
+        run: ./gradlew assembleRelease "-Pireader-patch-revision=$PATCH_REVISION"
+      - name: Run unit tests
+        working-directory: source
+        run: ./gradlew testReleaseUnitTest
+      - name: Sign and verify every APK
+        env:
+          IREADER_KEYSTORE_BASE64: ${{ secrets.IREADER_KEYSTORE_BASE64 }}
+          IREADER_KEYSTORE_PASSWORD: ${{ secrets.IREADER_KEYSTORE_PASSWORD }}
+          RELEASE_TAG: ${{ needs.detect.outputs.release_tag }}
+        run: python3 control/.github/ireader/sign.py source artifacts "$RELEASE_TAG" plan/release-plan.json
+      - name: Upload verified release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ireader-release-build
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload test diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ireader-build-diagnostics
+          path: |
+            source/**/build/reports/tests/
+            source/**/build/test-results/
+          retention-days: 7
+
+  publish:
+    needs: [detect, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Check out recipe with write credentials only in the publish job
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: control
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ireader-release-build
+          path: artifacts
+      - name: Publish a release only after build, tests, and signature verification
+        working-directory: control
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.detect.outputs.release_tag }}
+        run: bash .github/ireader/publish.sh

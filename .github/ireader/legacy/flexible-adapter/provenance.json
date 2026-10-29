@@ -1,0 +1,8 @@
+{
+  "source_commit": "c80135339bcff5f7f8c2c2380329dfc155b26232",
+  "override": "nu.studer:java-ordered-properties:1.0.1 -> 1.0.3",
+  "local_version": "c8013533-local-properties1.0.3",
+  "aar_sha256": "3c1d548647b292aa126009095de2bdae52fe69e789144b9c293a23b2e549742c",
+  "unchanged_library_source_files_verified": 37,
+  "source_url": "https://github.com/arkon/FlexibleAdapter/tree/c80135339bcff5f7f8c2c2380329dfc155b26232"
+}

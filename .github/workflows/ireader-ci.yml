@@ -1,0 +1,25 @@
+name: iReader - Automation checks
+
+on:
+  pull_request:
+    paths: ['.github/ireader/**', '.github/workflows/ireader-*.yml']
+  push:
+    branches: ['codex/automated-water-ripple-releases']
+    paths: ['.github/ireader/**', '.github/workflows/ireader-*.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test automation decisions and legacy fallback
+        run: python3 -m unittest discover -s .github/ireader/tests -v
+      - name: Check workflow expressions and shell snippets
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/ireader-ci.yml .github/workflows/ireader-release.yml

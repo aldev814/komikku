@@ -1,0 +1,8 @@
+{
+  "flexible-adapter/LICENSE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+  "flexible-adapter/README.md": "6f77a04cae91b95f07c76c52ef319cddaba4299703f19a102f595ada81e38983",
+  "flexible-adapter/build-dependency.patch": "483467d93820728323ee76e5e03fbe0bf80f584499f7f30c1d17b0be481a555b",
+  "flexible-adapter/provenance.json": "e741a3ebbc27e7ff50c81a85316492b7ec78df21d40dba0f76f68c4537b966df",
+  "maven/com/github/arkon/FlexibleAdapter/flexible-adapter/c8013533-local-properties1.0.3/flexible-adapter-c8013533-local-properties1.0.3.aar": "3c1d548647b292aa126009095de2bdae52fe69e789144b9c293a23b2e549742c",
+  "maven/com/github/arkon/FlexibleAdapter/flexible-adapter/c8013533-local-properties1.0.3/flexible-adapter-c8013533-local-properties1.0.3.pom": "7a481cca89384e10c0f368b364137c8508ed22ee2ad639c79e993e8a21e20340"
+}

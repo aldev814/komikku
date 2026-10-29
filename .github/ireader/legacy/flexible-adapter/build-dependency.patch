@@ -1,0 +1,10 @@
+--- a/build.gradle
++++ b/build.gradle
+@@ -101,4 +101,7 @@
+ buildscript {
++    configurations.classpath {
++        resolutionStrategy.force 'nu.studer:java-ordered-properties:1.0.3'
++    }
+     repositories {
+         mavenCentral()
+         gradlePluginPortal()

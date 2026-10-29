@@ -1,0 +1,16 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index feaf089e76d293eb251704d3b29baa374ea51e6e..e733069f6fb3008789ab1482eb6e49e088141e79 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -26,7 +26,10 @@ android {
+     namespace = "eu.kanade.tachiyomi"
+ 
+     defaultConfig {
+-        applicationId = "app.komikku"
++        // KMK -->
++        applicationId = "app.komikku.ireader"
++        versionNameSuffix = "-ireader.p${providers.gradleProperty("ireader-patch-revision").getOrElse("1")}"
++        // KMK <--
+ 
+         versionCode = 81
+         versionName = "1.14.1"

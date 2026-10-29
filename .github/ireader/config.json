@@ -1,0 +1,6 @@
+{
+  "upstream": "komikku-app/komikku",
+  "fork": "aldev814/komikku",
+  "patch_revision": 1,
+  "application_id": "app.komikku.ireader"
+}

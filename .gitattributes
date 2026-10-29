@@ -22,3 +22,9 @@
 *.woff binary
 *.pyc binary
 *.swp binary
+
+# iReader patch payloads and vendored Android archive
+*.patch -whitespace
+*.aar binary
+# Preserve the upstream license file verbatim.
+/.github/ireader/legacy/flexible-adapter/LICENSE -whitespace
