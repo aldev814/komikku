@@ -10,8 +10,9 @@
 - actionlint v1.7.7：通过。
 - 五个 Release APK：使用新建固定密钥签署并通过 apksigner 验证；独立包名 `app.komikku.ireader`。
 - 公共签名证书 SHA-256：`85fd9a95df28496994fa4ad68eb204cbb6b4945c2a217c23b23adfb4f3699c3f`。
-- GitHub 已实际运行过功能分支检查：[运行记录](https://github.com/aldev814/komikku/actions/runs/40907830059)。最终修正会触发新的分支检查。
+- GitHub 完整云端验证：[上游检测、自动补丁、Release 构建、测试、固定密钥签名和产物上传全部通过](https://github.com/aldev814/komikku/actions/runs/40910828124)。本次是功能分支运行，发布步骤按设计跳过。
+- 最终启用触发配置的脚本和 actionlint 检查：[通过](https://github.com/aldev814/komikku/actions/runs/40912351214)。
 
 本地使用 Android Studio 的 JBR 25；GitHub 工作流明确使用 JDK 21。上游现有的 Kotlin 元数据和 R8 警告未阻止构建或测试通过。
 
-固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。用户已确认手动配置完成两个仓库 Secrets，功能分支将验证其实际可用性。配方仍在功能分支，尚未合并到默认分支，因此目前没有启用定时发布，也尚未执行真实 GitHub Release 发布。iReader 真机水波纹效果未在本轮测试。
+固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。两个仓库 Secrets 已由用户手动配置，并在上述云端签名构建中实际使用成功。配方仍在功能分支，尚未合并到默认分支，因此目前没有启用定时发布，也尚未执行真实 GitHub Release 发布。iReader 真机水波纹效果未在本轮测试。
