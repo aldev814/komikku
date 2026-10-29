@@ -10,13 +10,13 @@
 
 1. 用 `git apply --3way --index` 应用本目录的两个补丁。三方合并允许无冲突的上下文变化；有冲突立即失败。
 2. 仅当旧坐标 `com.github.arkon.FlexibleAdapter:flexible-adapter:c8013533` 仍存在时，使用带 SHA-256 校验、源码构建补丁、许可证和来源记录的本地 AAR。`master` 使用的官方依赖不受影响。
-3. `spotlessApply` → `spotlessCheck` → 记录带补丁的源码提交 → `assembleRelease` → `testReleaseUnitTest`。发布源码中的 `.github/workflows` 使用 fork 当前已批准的同路径、同内容工作流；源码快照提交以当前配方提交为父提交，不向 fork 导入上游新增的工作流历史。应用源码仍完整来自目标上游标签及补丁，上游提交 SHA 保存在元数据中。这让普通 GITHUB_TOKEN 可以推送源码标签，无需额外 workflows 权限。
+3. `spotlessApply` → `spotlessCheck` → 记录带补丁的源码提交 → `assembleRelease` → `testReleaseUnitTest`。只使用上游已发布正式 Release 的标签，不跟随 master 最新 push。发布源码移除 `.github/workflows`，以不带父提交的独立快照记录，不导入上游工作流或 Git 历史；准确的上游提交 SHA 仍保存在元数据中。上游已通过测试，但补丁后的源码仍需重新编译并检查。
 4. 用固定签名生成并验证 universal、arm64-v8a、armeabi-v7a、x86、x86_64 五个 APK。
 5. 发布 `ireader-v上游版本-p补丁修订号` 标签和正式 Release，附 APK、SHA256SUMS、源码/签名元数据和补丁配方 ZIP。标签指向**实际打补丁后的源码提交**。
 
 同一个上游版本与补丁修订号已经正式发布时直接跳过；失败不发布，未完成的 draft 可以重跑恢复。发布后不覆盖 APK，不强推标签。更改补丁、依赖回退或构建行为后，将 `config.json` 中 `patch_revision` 加一以发布新修订。
 
-构建任务只有只读仓库权限；只有最后的发布任务有 `contents: write`。不需要 PAT，也不需要上游的 Firebase/Google Secrets。发布前会再次检查源码快照的工作流是否与配方分支完全相同；规则依据：[GitHub workflow scope](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes)。默认分支的并发锁防止定时、手动和配方推送同时发布，不中断正在进行的发布。上游原有的 master CI 在此 fork 中跳过，避免索取原项目的 Google 和签名 Secrets。
+构建任务只有只读仓库权限；只有最后的发布任务有 `contents: write`。不需要 PAT、workflows 权限或上游的 Firebase/Google Secrets。发布前再次确认源码快照不包含工作流且仅有一个提交。默认分支的并发锁防止定时、手动和配方推送同时发布，不中断正在进行的发布。fork 默认分支只保留 `ireader-release.yml` 和 `ireader-ci.yml` 两个自动化工作流，上游附带的构建、镜像、网站和 PR 工作流已移除。
 
 fork 的默认分支保存配方；每次上游新版的补丁源码保存在其 `ireader-*` 标签中，自动化不会覆盖默认分支，也不需要逐次把上游合并进默认分支。
 

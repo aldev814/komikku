@@ -143,7 +143,7 @@ class LegacyFallbackTest(unittest.TestCase):
 
 
 class WorkflowSnapshotTest(unittest.TestCase):
-    def test_snapshot_uses_only_identical_approved_workflows(self):
+    def test_snapshot_removes_workflows_without_changing_app_source(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source, control = root / 'source', root / 'control'
@@ -155,10 +155,9 @@ class WorkflowSnapshotTest(unittest.TestCase):
             (control / '.github/workflows/ireader.yml').write_text('approved release workflow\n')
             app = source / 'app.kt'
             app.write_text('patched app remains untouched\n')
-            packager.sync_approved_workflows(source, control)
-            actual = {p.name: p.read_bytes() for p in (source / '.github/workflows').iterdir()}
-            expected = {p.name: p.read_bytes() for p in (control / '.github/workflows').iterdir()}
-            self.assertEqual(actual, expected)
+            packager.remove_upstream_workflows(source)
+            self.assertFalse((source / '.github/workflows').exists())
+            self.assertTrue((control / '.github/workflows/ireader.yml').is_file())
             self.assertEqual(app.read_text(), 'patched app remains untouched\n')
 
 
@@ -186,14 +185,13 @@ class ReleaseSnapshotHistoryTest(unittest.TestCase):
                                         'upstream_url': 'https://github.com/komikku-app/komikku/releases/tag/v1.0.0'}))
             with patch.dict(os.environ, {'GITHUB_SHA': approved}):
                 packager.package(source, root / 'artifacts', plan, control=control)
-            self.assertEqual(packager.git(source, 'rev-parse', 'HEAD^'), approved)
-            self.assertEqual(len(packager.git(source, 'rev-list', 'HEAD', '^' + approved).splitlines()), 1)
+            self.assertEqual(packager.git(source, 'rev-list', '--count', 'HEAD'), '1')
             ancestor = subprocess.run(['git', 'merge-base', '--is-ancestor', upstream, 'HEAD'], cwd=source)
             self.assertEqual(ancestor.returncode, 1)
             self.assertEqual(packager.git(source, 'show', 'HEAD:app.kt'), 'upstream app plus water ripple')
-            self.assertEqual(packager.git(source, 'show', 'HEAD:.github/workflows/build.yml'), 'approved fork workflow')
+            self.assertEqual(packager.git(source, 'ls-tree', '-r', '--name-only', 'HEAD', '--', '.github/workflows'), '')
             self.assertEqual(json.loads(plan.read_text())['upstream_commit'], upstream)
-            self.assertEqual(json.loads(plan.read_text())['workflow_snapshot_commit'], approved)
+            self.assertNotIn('workflow_snapshot_commit', json.loads(plan.read_text()))
 
 
 class SigningOutputTest(unittest.TestCase):

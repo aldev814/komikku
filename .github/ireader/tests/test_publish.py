@@ -64,18 +64,24 @@ else: sys.exit(2)
                 return subprocess.run(['bash', str(ROOT / 'publish.sh')], cwd=control, env=environment,
                                       text=True, capture_output=True)
 
-            # A workflow mismatch must stop before any tag or release mutation.
-            workflows = control / '.github/workflows'
+            # Any workflow in the source snapshot stops before tag/release mutations.
+            workflows = source / '.github/workflows'
             workflows.mkdir(parents=True)
-            (workflows / 'approved.yml').write_text('name: approved\n')
-            git(control, 'add', '.')
-            git(control, 'commit', '-m', 'different approved workflows')
+            (workflows / 'upstream.yml').write_text('name: unwanted upstream workflow\n')
+            git(source, 'add', '.')
+            git(source, 'commit', '-m', 'unwanted workflows')
+            unwanted = git(source, 'rev-parse', 'HEAD')
+            git(source, 'update-ref', 'refs/heads/ireader-release', unwanted)
+            git(source, 'bundle', 'create', str(artifacts / 'patched-source.bundle'), 'refs/heads/ireader-release')
+            (artifacts / 'build-metadata.json').write_text(json.dumps({'source_commit': unwanted}))
             rejected = publish()
             self.assertNotEqual(rejected.returncode, 0)
-            self.assertIn('workflows differ', rejected.stderr)
+            self.assertIn('standalone snapshot without workflows', rejected.stderr)
             self.assertFalse((root / 'calls.txt').exists())
             self.assertEqual(git(root, '--git-dir=' + str(root / 'remote.git'), 'tag'), '')
-            git(control, 'reset', '--hard', 'HEAD~1')
+            git(source, 'update-ref', 'refs/heads/ireader-release', commit)
+            git(source, 'bundle', 'create', str(artifacts / 'patched-source.bundle'), 'refs/heads/ireader-release')
+            (artifacts / 'build-metadata.json').write_text(json.dumps({'source_commit': commit}))
 
             first = publish()
             self.assertNotEqual(first.returncode, 0)

@@ -15,16 +15,10 @@ def git(source, *args, **kwargs):
     return subprocess.check_output(['git', *args], cwd=source, text=True, **kwargs).strip()
 
 
-def sync_approved_workflows(source, control):
-    # A release tag must not introduce historical upstream workflow definitions.
-    # Use byte-identical files already approved on this fork's control branch.
-    approved = control / '.github/workflows'
-    destination = source / '.github/workflows'
-    if not approved.is_dir():
-        raise ValueError('Missing approved fork workflows')
-    if destination.exists():
-        shutil.rmtree(destination)
-    shutil.copytree(approved, destination)
+def remove_upstream_workflows(source):
+    workflows = source / '.github/workflows'
+    if workflows.exists():
+        shutil.rmtree(workflows)
 
 
 def package(source, artifacts, plan_file, control=None):
@@ -35,8 +29,7 @@ def package(source, artifacts, plan_file, control=None):
     automation_commit = git(control, 'rev-parse', 'HEAD')
     if os.environ.get('GITHUB_SHA') and os.environ['GITHUB_SHA'] != automation_commit:
         raise ValueError('Control checkout does not match the workflow commit')
-    sync_approved_workflows(source, control)
-    plan['workflow_snapshot_commit'] = automation_commit
+    remove_upstream_workflows(source)
     identity = {'GIT_AUTHOR_NAME': 'github-actions[bot]', 'GIT_COMMITTER_NAME': 'github-actions[bot]',
                 'GIT_AUTHOR_EMAIL': '41898282+github-actions[bot]@users.noreply.github.com',
                 'GIT_COMMITTER_EMAIL': '41898282+github-actions[bot]@users.noreply.github.com',
@@ -47,13 +40,12 @@ def package(source, artifacts, plan_file, control=None):
         staged = subprocess.check_output(['git', 'show', ':' + relative], cwd=source)
         if staged != aar.read_bytes():
             raise ValueError('Git filters changed vendored AAR bytes: ' + relative)
-    # Import only the already-approved fork history as the release parent. New
-    # upstream workflow commits must not be pushed with the contents-only token.
-    git(source, 'fetch', '--no-tags', str(control), automation_commit)
+    # Publish only this source tree. An independent root commit keeps all
+    # upstream workflow files AND their history out of the release tag.
     tree = git(source, 'write-tree')
     message = (f"Apply iReader p{plan['patch_revision']} to {plan['upstream_tag']}\n\n"
                f"Upstream: {plan['upstream_commit']}\nAutomation: {automation_commit}")
-    commit = git(source, 'commit-tree', tree, '-p', automation_commit, '-m', message,
+    commit = git(source, 'commit-tree', tree, '-m', message,
                  env={**os.environ, **identity})
     git(source, 'reset', '--soft', commit)
     plan_file.write_text(json.dumps(plan, indent=2) + '\n')

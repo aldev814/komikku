@@ -11,8 +11,9 @@ if [[ "$(git rev-parse FETCH_HEAD)" != "$source_commit" ]]; then
   echo '::error::Source bundle commit does not match signed APK metadata.' >&2
   exit 1
 fi
-if ! git diff --quiet HEAD "$source_commit" -- .github/workflows; then
-  echo '::error::Release source workflows differ from the approved fork workflows; refusing to push the tag.' >&2
+if [[ -n "$(git ls-tree -r --name-only "$source_commit" -- .github/workflows)" ]] ||
+   [[ "$(git rev-list --count "$source_commit")" != 1 ]]; then
+  echo '::error::Release source must be a standalone snapshot without workflows or upstream history.' >&2
   exit 1
 fi
 git config user.name 'github-actions[bot]'
