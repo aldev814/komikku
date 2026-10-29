@@ -22,6 +22,8 @@ permissions:
 
 jobs:
   build:
+    # The iReader fork has its own signing and release workflow.
+    if: github.repository == 'komikku-app/komikku'
     name: Build app
     runs-on: 'ubuntu-24.04'
 

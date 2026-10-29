@@ -3,7 +3,14 @@ name: iReader - Patch and release upstream stable
 on:
   push:
     branches: ['codex/automated-water-ripple-releases']
-    paths: ['.github/ireader/**', '.github/workflows/ireader-release.yml']
+    paths:
+      - '.github/ireader/*.py'
+      - '.github/ireader/*.sh'
+      - '.github/ireader/config.json'
+      - '.github/ireader/patches/**'
+      - '.github/ireader/legacy/**'
+      - '.github/ireader/legacy-checksums.json'
+      - '.github/workflows/ireader-release.yml'
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
@@ -18,8 +25,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ireader-release-${{ github.repository }}
-  cancel-in-progress: false
+  group: ireader-release-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   detect:
