@@ -18,6 +18,7 @@ def load(name):
 
 release = load('release')
 prepare_source = load('prepare_source')
+signer = load('sign')
 
 
 class ReleasePlanTest(unittest.TestCase):
@@ -138,6 +139,21 @@ class LegacyFallbackTest(unittest.TestCase):
         (self.source / 'third-party/ireader-legacy').mkdir(parents=True)
         with self.assertRaises(ValueError):
             prepare_source.legacy_flexible_adapter(self.source)
+
+
+class SigningOutputTest(unittest.TestCase):
+    def test_legacy_apksigner_certificate_format(self):
+        fingerprint = 'a' * 64
+        self.assertEqual(signer.signing_certificate('Signer #1 certificate SHA-256 digest: ' + fingerprint), fingerprint)
+
+    def test_new_build_tools_v3_certificate_format(self):
+        fingerprint = 'b' * 64
+        self.assertEqual(signer.signing_certificate('V3.0 Signer: certificate SHA-256 digest: ' + fingerprint), fingerprint)
+
+    def test_missing_or_multiple_certificates_are_rejected(self):
+        for output in ['Verifies', 'Signer #1 certificate SHA-256 digest: ' + 'a' * 64 + '\nSigner #2 certificate SHA-256 digest: ' + 'b' * 64]:
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                signer.signing_certificate(output)
 
 
 class PrepareSourceTest(unittest.TestCase):

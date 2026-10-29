@@ -11,6 +11,16 @@ import subprocess
 import tempfile
 
 
+def signing_certificate(verification):
+    fingerprints = set(re.findall(
+        r'^(?:Signer #\d+|V[\d.]+ Signer):? certificate SHA-256 digest: ([0-9a-fA-F]{64})$',
+        verification, re.MULTILINE,
+    ))
+    if len(fingerprints) != 1:
+        raise ValueError('Expected exactly one signing certificate')
+    return fingerprints.pop().lower()
+
+
 def sign(source, output, release_tag, plan_file):
     if not re.fullmatch(r'ireader-v[0-9][A-Za-z0-9._+-]*-p[0-9]+', release_tag):
         raise ValueError('Invalid release tag')
@@ -45,10 +55,7 @@ def sign(source, output, release_tag, plan_file):
                 '--out', str(destination), str(aligned),
             ], check=True)
             verification = subprocess.check_output([str(apksigner), 'verify', '--verbose', '--print-certs', str(destination)], text=True)
-            fingerprint = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-f]+)', verification)
-            if not fingerprint:
-                raise ValueError('Could not verify signing certificate')
-            certificates.add(fingerprint.group(1))
+            certificates.add(signing_certificate(verification))
     if len(certificates) != 1:
         raise ValueError('APK signing certificates differ')
     metadata['signing_certificate_sha256'] = certificates.pop()
