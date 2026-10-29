@@ -33,6 +33,12 @@ def legacy_flexible_adapter(source):
     if target.exists():
         raise ValueError('Refusing to overwrite existing third-party/ireader-legacy')
     shutil.copytree(legacy, target)
+    attributes = source / '.gitattributes'
+    with attributes.open('a') as output:
+        output.write('\n# Preserve vendored iReader dependency bytes.\n'
+                     '/third-party/ireader-legacy/**/*.aar binary\n'
+                     '/third-party/ireader-legacy/**/*.patch -whitespace\n'
+                     '/third-party/ireader-legacy/flexible-adapter/LICENSE -whitespace\n')
     catalog.write_text(content.replace(OLD_DEPENDENCY + '"', LOCAL_DEPENDENCY + '"'))
     settings = source / 'settings.gradle.kts'
     text = settings.read_text()

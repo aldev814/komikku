@@ -97,6 +97,17 @@ class LegacyFallbackTest(unittest.TestCase):
         self.assertEqual(len(list((self.source / 'third-party').rglob('*.aar'))), 1)
         self.assertTrue((self.source / 'NOTICE').is_file())
 
+    def test_git_stores_binary_aar_without_newline_conversion(self):
+        self.catalog.write_text('adapter = "' + prepare_source.OLD_DEPENDENCY + '"\n')
+        (self.source / '.gitattributes').write_text('* text eol=lf\n')
+        subprocess.run(['git', 'init', '-q'], cwd=self.source, check=True)
+        prepare_source.legacy_flexible_adapter(self.source)
+        aar = next((self.source / 'third-party').rglob('*.aar'))
+        relative = aar.relative_to(self.source).as_posix()
+        subprocess.run(['git', 'add', relative], cwd=self.source, check=True)
+        staged = subprocess.check_output(['git', 'show', ':' + relative], cwd=self.source)
+        self.assertEqual(staged, aar.read_bytes())
+
     def test_current_master_dependency_is_untouched(self):
         original = 'flexibleAdapter = { module = "eu.davidea:flexible-adapter", version = "5.1.0" }\n'
         self.catalog.write_text(original)

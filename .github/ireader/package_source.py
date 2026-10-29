@@ -24,6 +24,11 @@ def package(source, artifacts, plan_file):
                 'GIT_COMMITTER_EMAIL': '41898282+github-actions[bot]@users.noreply.github.com',
                 'GIT_AUTHOR_DATE': timestamp, 'GIT_COMMITTER_DATE': timestamp}
     git(source, 'add', '--all')
+    for aar in (source / 'third-party/ireader-legacy').rglob('*.aar'):
+        relative = aar.relative_to(source).as_posix()
+        staged = subprocess.check_output(['git', 'show', ':' + relative], cwd=source)
+        if staged != aar.read_bytes():
+            raise ValueError('Git filters changed vendored AAR bytes: ' + relative)
     git(source, 'commit', '-m', f"Apply iReader p{plan['patch_revision']} to {plan['upstream_tag']}\n\nAutomation: {automation_commit}",
         env={**os.environ, **identity})
     plan_file.write_text(json.dumps(plan, indent=2) + '\n')
