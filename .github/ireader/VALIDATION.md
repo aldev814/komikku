@@ -15,4 +15,14 @@
 
 本地使用 Android Studio 的 JBR 25；GitHub 工作流明确使用 JDK 21。上游现有的 Kotlin 元数据和 R8 警告未阻止构建或测试通过。
 
-固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。两个仓库 Secrets 已由用户手动配置，并在上述云端签名构建中实际使用成功。配方已获用户批准合并到默认分支，定时检测已启用。首次正式运行的构建、测试和签名全部成功，发布标签因上游工作流历史触发 GitHub 默认令牌权限限制而失败；按用户要求，修复改为不含 `.github/workflows`、不带上游 Git 历史的独立源码快照；fork 默认分支移除上游附带的九个工作流，仅保留本任务的两个工作流。修复后的真实发布结果待核验。iReader 真机水波纹效果未在本轮测试。
+固定签名材料仅保存在已忽略的 `.local-signing/` 中，未提交 Git。两个仓库 Secrets 已由用户手动配置，并在上述云端签名构建中实际使用成功。配方已获用户批准合并到默认分支，定时检测已启用。首次正式运行的构建、测试和签名全部成功，发布标签因上游工作流历史触发 GitHub 默认令牌权限限制而失败；按用户要求，修复改为不含 `.github/workflows`、不带上游 Git 历史的独立源码快照；fork 默认分支移除上游附带的九个工作流，仅保留本任务的两个工作流。修复后的真实发布已验证成功：
+
+- [正式发布运行](https://github.com/aldev814/komikku/actions/runs/40923729696)：检测、构建、测试、固定签名、产物上传和发布全部成功。
+- [Release `ireader-v1.14.1-p1`](https://github.com/aldev814/komikku/releases/tag/ireader-v1.14.1-p1)：公开正式版，共 8 个附件（5 个 APK、SHA256SUMS、build-metadata.json、ireader-patches.zip）。
+- 五个 APK 的 GitHub 资产 SHA-256 与发布的 SHA256SUMS 全部一致；证书指纹与本地固定密钥相符。
+- Release 标签指向源码提交 `111f5bee68420f8a593f3361c22986d60268057a`，无父提交，且 `.github/workflows` 不存在。
+- 元数据上游提交 `e30ff83265d7affcc14e172ea9eadf469db1f4aa`，构建配方提交 `f54042721c13e63f068fb8e84e768eb5a81d2805`。
+
+- 实际 API 去重检查返回 `needed=false`，不会重复构建已发布版本；发布工作流状态 `active`，默认每小时第 17 分钟检查正式 Release。
+
+iReader 真机水波纹效果未在本轮测试。
