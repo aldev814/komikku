@@ -57,9 +57,11 @@ def package(source, artifacts, plan_file, control=None):
         for name in files:
             if name:
                 archive.write(control / name, name)
-    (artifacts / 'RELEASE_NOTES.md').write_text(f'''基于上游正式版 [{plan['upstream_tag']}]({plan['upstream_url']})，自动应用 iReader 水波纹补丁 p{plan['patch_revision']}。
+    (artifacts / 'RELEASE_NOTES.md').write_text(f'''基于上游正式版 [{plan['upstream_tag']}]({plan['upstream_url']})，自动应用 iReader 水波纹与墨水屏界面补丁 p{plan['patch_revision']}。
 
 - 水波纹默认关闭；兼容 iReader SmartOS 4+ 的横向分页，支持 RTL、旋转和三档速度。
+- 墨水屏模式默认关闭；在「设置 → 外观」启用，支持明暗模式、矩形滑动开关和减少界面动画；保留封面原色与独立翻页设置。
+- 包含同源维护版图像解码器，并对正式 APK 执行 64 位原生库 LOAD 段及 ZIP 16KB 对齐检查；实机兼容性仍需设备验证。
 - 独立应用包名 `app.komikku.ireader`，可与原版并存；已有书库可使用应用内备份/恢复迁移。
 - 使用本 fork 的固定签名，后续本 fork 版本可覆盖升级；不能覆盖原版签名。
 - 未启用原版应用内更新和遥测；新版本从本仓库 Releases 下载。

@@ -4,7 +4,7 @@ on:
   pull_request:
     paths: ['.github/ireader/**', '.github/workflows/ireader-*.yml']
   push:
-    branches: ['codex/automated-water-ripple-releases']
+    branches: ['master', 'codex/**']
     paths: ['.github/ireader/**', '.github/workflows/ireader-*.yml']
   workflow_dispatch:
 
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Test automation decisions and legacy fallback
+      - name: Test release decisions, patch sequence, and native alignment
         run: python3 -m unittest discover -s .github/ireader/tests -v
       - name: Check workflow expressions and shell snippets
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/ireader-ci.yml .github/workflows/ireader-release.yml

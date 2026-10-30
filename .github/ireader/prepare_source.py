@@ -69,7 +69,7 @@ def prepare(source):
     legacy = legacy_flexible_adapter(source)
     subprocess.run(['git', 'diff', '--check'], cwd=source, check=True)
     subprocess.run(['git', 'diff', '--cached', '--check'], cwd=source, check=True)
-    print('Water-ripple and fork identity applied; legacy FlexibleAdapter fallback:', legacy)
+    print('Water-ripple, fork identity, and E-ink UI applied; legacy FlexibleAdapter fallback:', legacy)
     return legacy
 
 

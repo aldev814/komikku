@@ -38,5 +38,5 @@ else
   # The API detector already established that the release is absent or a draft.
   gh release create "$RELEASE_TAG" --verify-tag --draft --title "Komikku iReader $RELEASE_TAG" --notes-file "$artifacts/RELEASE_NOTES.md"
 fi
-gh release upload "$RELEASE_TAG" "$artifacts"/*.apk "$artifacts/SHA256SUMS" "$artifacts/build-metadata.json" "$artifacts/ireader-patches.zip" --clobber
+gh release upload "$RELEASE_TAG" "$artifacts"/*.apk "$artifacts/SHA256SUMS" "$artifacts/build-metadata.json" "$artifacts/ireader-patches.zip" "$artifacts/16k-alignment.json" --clobber
 gh release edit "$RELEASE_TAG" --draft=false --latest --notes-file "$artifacts/RELEASE_NOTES.md"
