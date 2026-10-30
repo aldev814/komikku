@@ -210,6 +210,15 @@ class SigningOutputTest(unittest.TestCase):
 
 
 class PrepareSourceTest(unittest.TestCase):
+    def test_all_three_patches_are_applied_in_order_before_legacy_fallback(self):
+        with patch.object(prepare_source.subprocess, 'check_output', return_value=''):
+            with patch.object(prepare_source.subprocess, 'run') as run:
+                with patch.object(prepare_source, 'legacy_flexible_adapter', return_value=False) as fallback:
+                    prepare_source.prepare(Path('/unused'))
+        patches = [Path(call.args[0][-1]).name for call in run.call_args_list if 'apply' in call.args[0]]
+        self.assertEqual(patches, ['0001-water-ripple.patch', '0002-fork-identity.patch', '0003-eink-ui.patch'])
+        fallback.assert_called_once_with(Path('/unused'))
+
     def test_dirty_checkout_is_rejected_before_patching(self):
         with patch.object(prepare_source.subprocess, 'check_output', return_value=' M app.kt\n'):
             with patch.object(prepare_source.subprocess, 'run') as run:

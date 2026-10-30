@@ -38,7 +38,7 @@ class PublishRecoveryTest(unittest.TestCase):
             git(control, 'commit', '--allow-empty', '-m', 'approved control snapshot')
             git(control, 'remote', 'add', 'origin', str(root / 'remote.git'))
             (artifacts / 'build-metadata.json').write_text(json.dumps({'source_commit': commit}))
-            for name in ['fixture.apk', 'SHA256SUMS', 'RELEASE_NOTES.md', 'ireader-patches.zip']:
+            for name in ['fixture.apk', 'SHA256SUMS', 'RELEASE_NOTES.md', 'ireader-patches.zip', '16k-alignment.json']:
                 (artifacts / name).write_text('fixture\n')
             fake = tools / 'gh'
             fake.write_text('''#!/usr/bin/env python3

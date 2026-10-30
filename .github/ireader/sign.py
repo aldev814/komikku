@@ -56,6 +56,7 @@ def sign(source, output, release_tag, plan_file):
             ], check=True)
             verification = subprocess.check_output([str(apksigner), 'verify', '--verbose', '--print-certs', str(destination)], text=True)
             certificates.add(signing_certificate(verification))
+            subprocess.run([str(zipalign), '-c', '-P', '16', '4', str(destination)], check=True)
     if len(certificates) != 1:
         raise ValueError('APK signing certificates differ')
     metadata['signing_certificate_sha256'] = certificates.pop()
