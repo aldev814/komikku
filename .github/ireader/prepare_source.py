@@ -45,14 +45,12 @@ def legacy_flexible_adapter(source):
     anchor = '    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n'
     if text.count(anchor) != 1:
         raise ValueError('Repository configuration changed; update the legacy fallback manually')
-    text = text.replace(anchor, anchor + '''        // KMK -->
-        exclusiveContent {
+    text = text.replace(anchor, anchor + '''        exclusiveContent {
             forRepository {
                 maven { url = uri(rootDir.resolve("third-party/ireader-legacy/maven")) }
             }
             filter { includeModule("com.github.arkon.FlexibleAdapter", "flexible-adapter") }
         }
-        // KMK <--
 ''')
     settings.write_text(text)
     notice = source / 'NOTICE'
