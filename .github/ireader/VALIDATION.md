@@ -32,7 +32,13 @@ iReader 真机水波纹效果未在本轮测试。
 - `0003-eink-ui.patch` 在干净的上游 `v1.14.1` 上接续水波纹和身份补丁重放通过；未包含本地 Debug 测试包身份。
 - 自动化测试 31 项通过，新增三份补丁顺序与 16KB 原生库/ZIP 对齐失败阻断测试。
 - p2 保留 p1 的正式包名和固定签名；不修改漫画翻页和 iReader 水波纹偏好。
-- 云端完整构建与发布结果在执行后补充；真机残影、刷新与系统兼容性提示仍需设备复测。
+- 真机残影、刷新与系统兼容性提示仍需设备复测。
 
 - [p2 首次云端构建](https://github.com/aldev814/komikku/actions/runs/41068984357)：格式、Release 构建、单元测试及五包签名通过；16KB 门禁准确拦截旧 SQLite 4KB LOAD 段，未发布。补丁随后更新同源 SQLite 3.49.0，并补充失败时的原生检查报告。
 - 本地最初构建遇到 DNS 下载失败；独立进程重试后 `spotlessCheck`、`assembleRelease` 与 `testReleaseUnitTest` 通过，81 项测试、0 失败、0 错误、1 跳过。R8 的 Kotlin 编译器诊断类提示未阻止成功；该次尚带旧 SQLite，不能作为修复后最终产物的通过证据。
+
+- SQLite 修复后，干净源码再次三补丁重放、`spotlessApply`、`spotlessCheck`、`assembleRelease -Pireader-patch-revision=2`、`testReleaseUnitTest`、`assembleDebug` 全部通过；最终单元测试 81 项、0 失败、0 错误、1 跳过。
+- 本地最终 universal Release APK：包名 `app.komikku.ireader`，版本 `1.14.1-ireader.p2`，min SDK 26；全部 16 份 64 位原生库 LOAD 段和 ZIP 16KB 对齐通过。
+
+- [修复后的 p2 云端完整验证](https://github.com/aldev814/komikku/actions/runs/41070952009)：三补丁应用、格式、Release 构建、单元测试、五包签名、全部 16 份 64 位库/ZIP 16KB 门禁和产物上传全部通过。功能分支发布任务按设计跳过。
+- [PR #1 自动化检查](https://github.com/aldev814/komikku/pull/1/checks)：通过，包含 31 项自动化测试与 actionlint。
