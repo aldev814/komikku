@@ -60,7 +60,7 @@ python3 .github/ireader/setup_signing.py --upload
 
 ## 修改与验证
 
-补丁文件在 `patches/`；`0001` 来自 Shihon，适配基线 `1656575e8fdaaef010c652f9758130c2a01d8890`；`0002` 设置独立包名和版本后缀；`0003-eink-ui.patch` 基于 `v1.14.1` 应用前两份补丁后的源码，包含已确认的墨水屏界面、矩形滑动开关和 16KB 图像解码器修复。原补丁基于 master，但已验证三方合并可以应用于正式版 `v1.14.1`。
+补丁文件在 `patches/`；`0001` 来自 Shihon，适配基线 `1656575e8fdaaef010c652f9758130c2a01d8890`；`0002` 设置独立包名和版本后缀；`0003-eink-ui.patch` 基于 `v1.14.1` 应用前两份补丁后的源码，包含已确认的墨水屏界面、矩形滑动开关和 16KB 图像解码器/SQLite 修复。原补丁基于 master，但已验证三方合并可以应用于正式版 `v1.14.1`。
 
 自动化逻辑测试与工作流检查：
 
@@ -94,3 +94,7 @@ CI 使用 JDK 21 和 Gradle wrapper，并安装墨水屏补丁所需的 Android 
 `check_apk_alignment.py` 仅验证 64 位 ELF LOAD 段和 ZIP 内存储对齐，不代表已在所有 16KB 设备上运行验证，也不能保证厂商安全中心不再显示“未知错误”。检查失败将阻止发布；报告随 Release 提供。它不会添加关闭或隐藏系统兼容性检查的选项。
 
 现有机制是每小时检查最新正式 Release，并非上游发布事件的即时推送；上游变更导致补丁冲突或构建失败时会停止，需修复配方后增加修订号，不能保证任意未来版本无人工干预。
+
+### 正式版旧 SQLite 依赖
+
+`v1.14.1` 的 `com.github.requery:sqlite-android:665608662e` 内含 4KB 对齐的 `libsqlite3x.so`。p2 将其更新为同上游已发布标签 `3.49.0`（提交 `fc24cc4284eaa77a391d48caaf47d15c37e7bbe3`）；保留现有 `RequerySQLiteOpenHelperFactory` 接口与数据库结构，不替换数据库实现。已下载 AAR 的 SHA-256 为 `2a746d7d9d68f4393d80bbca4e2af07643bc963e22ef737a7fa035d70e07aa70`，两种 64 位 ABI 的 LOAD 段均通过 16KB 检查。上游说明见 [16KB 支持记录](https://github.com/requery/sqlite-android/issues/195)；最终 APK 仍由发布门禁重新检查。

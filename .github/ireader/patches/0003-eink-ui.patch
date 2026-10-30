@@ -3059,9 +3059,18 @@ index a4f5577d3b5dbb354947941356f25d0dbfce3443..86e9c44130d2dec100b89a29a1c3ff01
          defaultConfig {
              minSdk = AndroidConfig.MIN_SDK
 diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
-index 53dd95695b2db25f392fb15cf60c42f260b1a6ef..e3a3e0ea54f65552c5d101efc68dd69d2406d8b0 100644
+index 53dd95695b2db25f392fb15cf60c42f260b1a6ef..0be55ad41023ee49932f6912afaf7d9c90c0e2b2 100644
 --- a/gradle/libs.versions.toml
 +++ b/gradle/libs.versions.toml
+@@ -39,7 +39,7 @@ libarchive = "me.zhanghai.android.libarchive:library:1.1.6"
+ 
+ sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }
+ sqlite-ktx = { module = "androidx.sqlite:sqlite-ktx", version.ref = "sqlite" }
+-sqlite-android = "com.github.requery:sqlite-android:665608662e"
++sqlite-android = "com.github.requery:sqlite-android:3.49.0"
+ 
+ preferencektx = "androidx.preference:preference-ktx:1.2.1"
+ 
 @@ -52,7 +52,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose" }
  coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp" }
  

@@ -120,9 +120,10 @@ jobs:
           RELEASE_TAG: ${{ needs.detect.outputs.release_tag }}
         run: python3 control/.github/ireader/sign.py source artifacts "$RELEASE_TAG" plan/release-plan.json
       - name: Check 16 KB ELF LOAD and APK alignment
+        shell: bash
         env:
           RELEASE_TAG: ${{ needs.detect.outputs.release_tag }}
-        run: python3 control/.github/ireader/check_apk_alignment.py "artifacts/Komikku-$RELEASE_TAG-universal.apk" > artifacts/16k-alignment.json
+        run: python3 control/.github/ireader/check_apk_alignment.py "artifacts/Komikku-$RELEASE_TAG-universal.apk" | tee artifacts/16k-alignment.json
       - name: Upload verified release artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -138,6 +139,7 @@ jobs:
           path: |
             source/**/build/reports/tests/
             source/**/build/test-results/
+            artifacts/16k-alignment.json
           retention-days: 7
 
   publish:

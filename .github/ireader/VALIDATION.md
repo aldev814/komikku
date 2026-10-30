@@ -33,3 +33,6 @@ iReader 真机水波纹效果未在本轮测试。
 - 自动化测试 31 项通过，新增三份补丁顺序与 16KB 原生库/ZIP 对齐失败阻断测试。
 - p2 保留 p1 的正式包名和固定签名；不修改漫画翻页和 iReader 水波纹偏好。
 - 云端完整构建与发布结果在执行后补充；真机残影、刷新与系统兼容性提示仍需设备复测。
+
+- [p2 首次云端构建](https://github.com/aldev814/komikku/actions/runs/41068984357)：格式、Release 构建、单元测试及五包签名通过；16KB 门禁准确拦截旧 SQLite 4KB LOAD 段，未发布。补丁随后更新同源 SQLite 3.49.0，并补充失败时的原生检查报告。
+- 本地最初构建遇到 DNS 下载失败；独立进程重试后 `spotlessCheck`、`assembleRelease` 与 `testReleaseUnitTest` 通过，81 项测试、0 失败、0 错误、1 跳过。R8 的 Kotlin 编译器诊断类提示未阻止成功；该次尚带旧 SQLite，不能作为修复后最终产物的通过证据。
